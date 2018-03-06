@@ -1,22 +1,27 @@
-#!/usr/bin/python3
+#!/usr/bin/python
 # Creates a database
 
+import MySQLdb
+import os
 import random
 import string
 import subprocess
 import sys
-
-from common import (
-    get_db_cursor,
-    user,
-    service_password,
-)
 
 from charmhelpers.core.hookenv import (
     action_fail,
     action_set,
     log,
 )
+
+
+def get_db_cursor():
+    # Connect to mysql
+    passwd = open('/var/lib/mysql/mysql.passwd').read()
+    log('Password found to be: ')
+    log(passwd)
+    connection = MySQLdb.connect(user="root", host="localhost", passwd=passwd)
+    return connection.cursor()
 
 
 def runsql(sql):
@@ -33,10 +38,33 @@ def generate_dbname():
     return dbname
 
 
+def get_service_user_file(service):
+    return '/var/lib/mysql/%s.service_user2' % service
+
+
+def get_service_user(dbname):
+
+    subprocess.check_output(['pwgen', '-N 2', '15']).strip().split("\n")
+    if dbname == '':
+        return (None, None)
+    sfile = get_service_user_file(dbname)
+    if os.path.exists(sfile):
+        with open(sfile, 'r') as f:
+            return (f.readline().strip(), f.readline().strip())
+    (suser, service_password) = \
+        subprocess.check_output(['pwgen', '-N 2', '15']).strip().split("\n")
+    with open(sfile, 'w') as f:
+        f.write("%s\n" % suser)
+        f.write("%s\n" % service_password)
+        f.flush()
+    return (suser, service_password)
+
+
 cursor = get_db_cursor()
 
 log('generating a database name')
 database_name = generate_dbname()
+user, service_password = get_service_user(database_name)
 log(database_name)
 
 cursor.execute("show databases")

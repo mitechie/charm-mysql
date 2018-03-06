@@ -36,20 +36,8 @@ def cleanup_service_user(service):
 relation_id = os.environ.get('JUJU_RELATION_ID')
 change_unit = os.environ.get('JUJU_REMOTE_UNIT')
 
-# We'll name the database the same as the service.
-database_name_file = '.%s_database_name' % (relation_id)
-# change_unit will be None on broken hooks
-database_name = ''
-if change_unit:
-    database_name, _ = change_unit.split("/")
-    with open(database_name_file, 'w') as dbnf:
-        dbnf.write("%s\n" % database_name)
-        dbnf.flush()
-elif os.path.exists(database_name_file):
-    with open(database_name_file, 'r') as dbname:
-        database_name = dbname.readline().strip()
-else:
-    print 'No established database and no REMOTE_UNIT.'
+
+
 # A user per service unit so we can deny access quickly
 user, service_password = get_service_user(database_name)
 connection = None
@@ -61,18 +49,6 @@ broken_path = '/var/lib/juju/%s.mysql.broken' % database_name
 broken = os.path.exists(broken_path)
 
 
-def get_db_helper():
-    return MySQLHelper(rpasswdf_template='/var/lib/mysql/mysql.passwd',
-                       upasswdf_template='/var/lib/mysql/mysql-{}.passwd',
-                       delete_ondisk_passwd_file=False)
-
-
-def get_db_cursor():
-    # Connect to mysql
-    db_helper = get_db_helper()
-    passwd = db_helper.get_mysql_root_password()
-    connection = MySQLdb.connect(user="root", host="localhost", passwd=passwd)
-    return connection.cursor()
 
 
 def migrate_to_mount(new_path):
