@@ -20,23 +20,23 @@ from charmhelpers.core.hookenv import (
 
 
 def runsql(sql):
-	print "[%s]" % sql
-	cursor.execute(sql)
+    print("[{}]".format(sql))
+    cursor.execute(sql)
 
 
 def generate_dbname():
-    random = ''.join([
-            random.choice(string.ascii_letters + string.digits) \
-            for n in xrange(32)
+    dbname = ''.join([
+        random.choice(string.ascii_letters + string.digits)
+        for n in xrange(32)
     ])
 
-    return random
+    return dbname
 
 
 cursor = get_db_cursor()
 
 log('generating a database name')
-database_name = generate_dbname():
+database_name = generate_dbname()
 log(database_name)
 
 cursor.execute("show databases")
@@ -48,18 +48,16 @@ if database_name in databases:
 else:
     log("Creating database")
     runsql("create database `%s` character set utf8" % database_name)
-    with open(database_name_file, 'w') as dbname:
-        dbname.write(database_name)
 
     runsql(
         "grant all on `%s`.* to `%s` identified by '%s'" % (
-        database_name,
-        user,
-        service_password))
+            database_name,
+            user,
+            service_password))
 
     hostname = subprocess.check_output([
-                'unit-get',
-                'private-address']).strip()
+        'unit-get',
+        'private-address']).strip()
     log("Found hostname {}".format(hostname))
     action_set({
         'database': database_name,
