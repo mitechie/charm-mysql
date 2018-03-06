@@ -1,0 +1,66 @@
+#!/usr/bin/python3
+# Creates a database
+
+import random
+import string
+import subprocess
+import sys
+
+from common import (
+    get_db_cursor,
+    user,
+    service_password,
+
+)
+
+from charmhelpers.core.hookenv import (
+    action_fail,
+    action_set,
+)
+
+
+def runsql(sql):
+	print "[%s]" % sql
+	cursor.execute(sql)
+
+
+def generate_dbname():
+    random = ''.join([
+            random.choice(string.ascii_letters + string.digits) \
+            for n in xrange(32)
+    ])
+
+    return random
+
+
+cursor = get_db_cursor()
+database_name = generate_dbname():
+
+
+cursor.execute("show databases")
+databases = [i[0] for i in cursor.fetchall()]
+if database_name in databases:
+    print "database exists already"
+    action_fail("Database exists already.")
+    sys.exit(0)
+else:
+    if not broken and not admin:
+        runsql("create database `%s` character set utf8" % database_name)
+        with open(database_name_file, 'w') as dbname:
+            dbname.write(database_name)
+
+        runsql(
+            "grant all on `%s`.* to `%s` identified by '%s'" % (
+            database_name,
+            user,
+            service_password))
+
+        hostname = subprocess.check_output([
+                    'unit-get',
+                    'private-address']).strip()
+        action_set({
+            'database': database_name,
+            'user': user,
+            'password': service_password,
+            'host': hostname
+        })

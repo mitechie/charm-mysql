@@ -1,0 +1,9 @@
+create-db:
+  description: Create a database
+  params:
+    username:
+      type: string
+      description: User name of the owner of the database
+  required: [username]
+  additionalProperties: false
+
